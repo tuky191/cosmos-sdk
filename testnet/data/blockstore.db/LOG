@@ -1,0 +1,6 @@
+=============== Oct 6, 2020 (KST) ===============
+15:23:22.073783 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+15:23:22.085724 db@open opening
+15:23:22.086373 version@stat F·[] S·0B[] Sc·[]
+15:23:22.096617 db@janitor F·2 G·0
+15:23:22.096678 db@open done T·10.910847ms
