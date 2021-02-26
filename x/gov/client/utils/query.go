@@ -3,7 +3,6 @@ package utils
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/context"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/client/utils"
@@ -45,12 +44,23 @@ func QueryDepositsByTxQuery(cliCtx context.CLIContext, params types.QueryProposa
 
 	// NOTE: SearchTxs is used to facilitate the txs query which does not currently
 	// support configurable pagination.
+
 	searchResult, err := utils.QueryTxsByEvents(cliCtx, events, defaultPage, defaultLimit)
 	if err != nil {
 		return nil, err
 	}
 
 	var deposits []types.Deposit
+
+	// initial deposit was submitted with proposal, so must be queried seperately
+	initialDeposit, err := QueryInitialDepositByTxQuery(cliCtx, params.ProposalID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !initialDeposit.Amount.IsZero() {
+		deposits = append(deposits, initialDeposit)
+	}
 
 	for _, info := range searchResult.Txs {
 		for _, msg := range info.Tx.GetMsgs() {
@@ -82,40 +92,29 @@ func QueryVotesByTxQuery(cliCtx context.CLIContext, params types.QueryProposalVo
 			fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeyAction, types.TypeMsgVote),
 			fmt.Sprintf("%s.%s='%s'", types.EventTypeProposalVote, types.AttributeKeyProposalID, []byte(fmt.Sprintf("%d", params.ProposalID))),
 		}
-		votes      []types.Vote
-		nextTxPage = defaultPage
-		totalLimit = params.Limit * params.Page
+		votes []types.Vote
 	)
-	// query interrupted either if we collected enough votes or tx indexer run out of relevant txs
-	for len(votes) < totalLimit {
-		searchResult, err := utils.QueryTxsByEvents(cliCtx, events, nextTxPage, defaultLimit)
-		if err != nil {
-			return nil, err
-		}
-		nextTxPage++
-		for _, info := range searchResult.Txs {
-			for _, msg := range info.Tx.GetMsgs() {
-				if msg.Type() == types.TypeMsgVote {
-					voteMsg := msg.(types.MsgVote)
 
-					votes = append(votes, types.Vote{
-						Voter:      voteMsg.Voter,
-						ProposalID: params.ProposalID,
-						Option:     voteMsg.Option,
-					})
-				}
+	// query interrupted either if we collected enough votes or tx indexer run out of relevant txs
+	searchResult, err := utils.QueryTxsByEvents(cliCtx, events, params.Page, params.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, info := range searchResult.Txs {
+		for _, msg := range info.Tx.GetMsgs() {
+			if msg.Type() == types.TypeMsgVote {
+				voteMsg := msg.(types.MsgVote)
+
+				votes = append(votes, types.Vote{
+					Voter:      voteMsg.Voter,
+					ProposalID: params.ProposalID,
+					Option:     voteMsg.Option,
+				})
 			}
 		}
-		if len(searchResult.Txs) != defaultLimit {
-			break
-		}
 	}
-	start, end := client.Paginate(len(votes), params.Page, params.Limit, 100)
-	if start < 0 || end < 0 {
-		votes = []types.Vote{}
-	} else {
-		votes = votes[start:end]
-	}
+
 	if cliCtx.Indent {
 		return cliCtx.Codec.MarshalJSONIndent(votes, "", "  ")
 	}
@@ -226,6 +225,38 @@ func QueryProposerByTxQuery(cliCtx context.CLIContext, proposalID uint64) (Propo
 	}
 
 	return Proposer{}, fmt.Errorf("failed to find the proposer for proposalID %d", proposalID)
+}
+
+// QueryInitialDepositByTxQuery will query for a initial deposit of a governance proposal by
+// ID.
+func QueryInitialDepositByTxQuery(cliCtx context.CLIContext, proposalID uint64) (types.Deposit, error) {
+	events := []string{
+		fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeyAction, types.TypeMsgSubmitProposal),
+		fmt.Sprintf("%s.%s='%s'", types.EventTypeSubmitProposal, types.AttributeKeyProposalID, []byte(fmt.Sprintf("%d", proposalID))),
+	}
+
+	// NOTE: SearchTxs is used to facilitate the txs query which does not currently
+	// support configurable pagination.
+	searchResult, err := utils.QueryTxsByEvents(cliCtx, events, defaultPage, defaultLimit)
+	if err != nil {
+		return types.Deposit{}, err
+	}
+
+	for _, info := range searchResult.Txs {
+		for _, msg := range info.Tx.GetMsgs() {
+			// there should only be a single proposal under the given conditions
+			if msg.Type() == types.TypeMsgSubmitProposal {
+				subMsg := msg.(types.MsgSubmitProposal)
+				return types.Deposit{
+					Depositor:  subMsg.Proposer,
+					ProposalID: proposalID,
+					Amount:     subMsg.InitialDeposit,
+				}, nil
+			}
+		}
+	}
+
+	return types.Deposit{}, fmt.Errorf("failed to find the initial deposit for proposalID %d", proposalID)
 }
 
 // QueryProposalByID takes a proposalID and returns a proposal
