@@ -3,6 +3,7 @@ package keeper
 import (
 	"container/list"
 	"fmt"
+	"sync"
 
 	"github.com/tendermint/tendermint/libs/log"
 
@@ -22,13 +23,14 @@ var _ types.DelegationSet = Keeper{}
 
 // keeper of the staking store
 type Keeper struct {
-	storeKey           sdk.StoreKey
-	cdc                *codec.Codec
-	supplyKeeper       types.SupplyKeeper
-	hooks              types.StakingHooks
-	paramstore         params.Subspace
-	validatorCache     map[string]cachedValidator
-	validatorCacheList *list.List
+	storeKey            sdk.StoreKey
+	cdc                 *codec.Codec
+	supplyKeeper        types.SupplyKeeper
+	hooks               types.StakingHooks
+	paramstore          params.Subspace
+	validatorCache      map[string]cachedValidator
+	validatorCacheList  *list.List
+	validatorCacheMutex sync.Mutex
 }
 
 // NewKeeper creates a new staking Keeper instance
