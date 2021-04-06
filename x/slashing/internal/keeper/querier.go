@@ -72,6 +72,7 @@ func querySigningInfos(ctx sdk.Context, req abci.RequestQuery, k Keeper) ([]byte
 	var signingInfos []types.ValidatorSigningInfo
 
 	k.IterateValidatorSigningInfos(ctx, func(consAddr sdk.ConsAddress, info types.ValidatorSigningInfo) (stop bool) {
+		info.Address = consAddr
 		signingInfos = append(signingInfos, info)
 		return false
 	})
