@@ -185,12 +185,26 @@ func (app *BaseApp) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
 	}
 
 	return abci.ResponseCheckTx{
-		GasWanted: int64(gInfo.GasWanted), // TODO: Should type accept unsigned ints?
-		GasUsed:   int64(gInfo.GasUsed),   // TODO: Should type accept unsigned ints?
-		Log:       result.Log,
-		Data:      result.Data,
-		Events:    result.Events.ToABCIEvents(),
+		GasWanted:  int64(gInfo.GasWanted), // TODO: Should type accept unsigned ints?
+		GasUsed:    int64(gInfo.GasUsed),   // TODO: Should type accept unsigned ints?
+		Log:        result.Log,
+		Data:       result.Data,
+		Events:     result.Events.ToABCIEvents(),
+		IsOracleTx: isOracleTx(tx.GetMsgs()),
 	}
+}
+
+func isOracleTx(msgs []sdk.Msg) bool {
+	for _, msg := range msgs {
+		if msg.Type() == "aggregateexchangerateprevote" ||
+			msg.Type() == "aggregateexchangeratevote" {
+			continue
+		} else {
+			return false
+		}
+	}
+
+	return true
 }
 
 // DeliverTx implements the ABCI interface and executes a tx in DeliverTx mode.
