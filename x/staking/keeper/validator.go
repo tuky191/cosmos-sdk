@@ -27,6 +27,9 @@ func newCachedValidator(val types.Validator, marshalled string) cachedValidator 
 
 // get a single validator
 func (k Keeper) GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator types.Validator, found bool) {
+	k.validatorCacheMutex.Lock()
+	defer k.validatorCacheMutex.Unlock()
+
 	store := ctx.KVStore(k.storeKey)
 	value := store.Get(types.GetValidatorKey(addr))
 	if value == nil {
@@ -35,8 +38,6 @@ func (k Keeper) GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator ty
 
 	// If these amino encoded bytes are in the cache, return the cached validator
 	strValue := string(value)
-	k.validatorCacheMutex.RLock()
-	defer k.validatorCacheMutex.RUnlock()
 	if val, ok := k.validatorCache[strValue]; ok {
 		valToReturn := val.val
 		// Doesn't mutate the cache's value
@@ -47,9 +48,6 @@ func (k Keeper) GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator ty
 	// amino bytes weren't found in cache, so amino unmarshal and add it to the cache
 	validator = types.MustUnmarshalValidator(k.cdc, value)
 	cachedVal := newCachedValidator(validator, strValue)
-
-	k.validatorCacheMutex.Lock()
-	defer k.validatorCacheMutex.Unlock()
 	k.validatorCache[strValue] = newCachedValidator(validator, strValue)
 	k.validatorCacheList.PushBack(cachedVal)
 
