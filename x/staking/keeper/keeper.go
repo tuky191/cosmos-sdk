@@ -30,7 +30,7 @@ type Keeper struct {
 	paramstore          params.Subspace
 	validatorCache      map[string]cachedValidator
 	validatorCacheList  *list.List
-	validatorCacheMutex sync.Mutex
+	validatorCacheMutex *sync.RWMutex
 }
 
 // NewKeeper creates a new staking Keeper instance
@@ -48,13 +48,14 @@ func NewKeeper(
 	}
 
 	return Keeper{
-		storeKey:           key,
-		cdc:                cdc,
-		supplyKeeper:       supplyKeeper,
-		paramstore:         paramstore.WithKeyTable(ParamKeyTable()),
-		hooks:              nil,
-		validatorCache:     make(map[string]cachedValidator, aminoCacheSize),
-		validatorCacheList: list.New(),
+		storeKey:            key,
+		cdc:                 cdc,
+		supplyKeeper:        supplyKeeper,
+		paramstore:          paramstore.WithKeyTable(ParamKeyTable()),
+		hooks:               nil,
+		validatorCache:      make(map[string]cachedValidator, aminoCacheSize),
+		validatorCacheList:  list.New(),
+		validatorCacheMutex: new(sync.RWMutex),
 	}
 }
 
