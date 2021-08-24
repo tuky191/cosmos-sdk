@@ -37,6 +37,6 @@ require (
 	gopkg.in/yaml.v2 v2.3.0
 )
 
-replace github.com/tendermint/tendermint => github.com/terra-project/tendermint v0.33.9-terra.2
+replace github.com/tendermint/tendermint => github.com/terra-project/tendermint v0.33.9-terra.3
 
 replace github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4
