@@ -99,6 +99,20 @@ func QueryTxsRequestHandlerFn(clientCtx client.Context) http.HandlerFunc {
 			return
 		}
 
+		txHeightEventFound := false
+		for _, event := range events {
+			if strings.Contains(event, "tx.height=") {
+				txHeightEventFound = true
+				break
+			}
+		}
+
+		if !txHeightEventFound {
+			rest.WriteErrorResponse(w, http.StatusBadRequest, "must provide tx.height events for public node")
+
+			return
+		}
+
 		searchResult, err := authtx.QueryTxsByEvents(clientCtx, events, page, limit, "")
 		if rest.CheckInternalServerError(w, err) {
 			return

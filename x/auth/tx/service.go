@@ -59,10 +59,19 @@ func (s txServer) GetTxsEvent(ctx context.Context, req *txtypes.GetTxsEventReque
 		return nil, status.Error(codes.InvalidArgument, "must declare at least one event to search")
 	}
 
+	txHeightEventFound := false
 	for _, event := range req.Events {
 		if !strings.Contains(event, "=") || strings.Count(event, "=") > 1 {
 			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid event; event %s should be of the format: %s", event, eventFormat))
 		}
+
+		if strings.Contains(event, "tx.height=") {
+			txHeightEventFound = true
+		}
+	}
+
+	if !txHeightEventFound {
+		return nil, status.Error(codes.InvalidArgument, "must provide tx.height events for public node")
 	}
 
 	result, err := QueryTxsByEvents(s.clientCtx, req.Events, page, limit, orderBy)
