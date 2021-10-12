@@ -76,9 +76,10 @@ Security Release. No breaking changes related to 0.44.x.
 
 ### Bug Fixes
 
+* (rosetta) [\#10340](https://github.com/cosmos/cosmos-sdk/pull/10340) Use `tmRPC.Status(ctx)` instead `tmRPC.Genesis(ctx)` to get genesis block height
 * [\#9965](https://github.com/cosmos/cosmos-sdk/pull/9965) Fixed `simd version` command output to report the right release tag.
 * (x/upgrade) [\#10189](https://github.com/cosmos/cosmos-sdk/issues/10189) Removed potential sources of non-determinism in upgrades.
-
+  
 ### Client Breaking Changes
 
 * [\#10041](https://github.com/cosmos/cosmos-sdk/pull/10041) Remove broadcast & encode legacy REST endpoints. Please see the [REST Endpoints Migration guide](https://docs.cosmos.network/master/migrations/rest.html) to migrate to the new REST endpoints.
