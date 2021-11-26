@@ -68,9 +68,14 @@ func Paginate(
 
 	if limit == 0 {
 		limit = DefaultLimit
+	}
 
-		// count total results when the limit is zero/not supplied
-		countTotal = true
+	if countTotal {
+		return nil, fmt.Errorf("invalid request, count_total is not allowed for the public node")
+	}
+
+	if limit != 10 && limit != 50 && limit != 100 {
+		return nil, fmt.Errorf("invalid request, limit should be one of [10, 50, 100] for cache performance")
 	}
 
 	if len(key) != 0 {
