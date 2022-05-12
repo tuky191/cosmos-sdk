@@ -14,6 +14,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+// StakingPowerUpgradeHeight defines the block height after which messages that
+// would impact staking power are no longer supported.
+const StakingPowerUpgradeHeight = 0
+
 type msgServer struct {
 	Keeper
 }
@@ -29,6 +33,11 @@ var _ types.MsgServer = msgServer{}
 // CreateValidator defines a method for creating a new validator
 func (k msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateValidator) (*types.MsgCreateValidatorResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	currHeight := ctx.BlockHeight()
+	if currHeight > StakingPowerUpgradeHeight {
+		return nil, sdkerrors.Wrapf(types.ErrMsgNotSupported, "message type %T is not supported at height %d", msg, currHeight)
+	}
 
 	valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
 	if err != nil {
@@ -188,6 +197,12 @@ func (k msgServer) EditValidator(goCtx context.Context, msg *types.MsgEditValida
 // Delegate defines a method for performing a delegation of coins from a delegator to a validator
 func (k msgServer) Delegate(goCtx context.Context, msg *types.MsgDelegate) (*types.MsgDelegateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	currHeight := ctx.BlockHeight()
+	if currHeight > StakingPowerUpgradeHeight {
+		return nil, sdkerrors.Wrapf(types.ErrMsgNotSupported, "message type %T is not supported at height %d", msg, currHeight)
+	}
+
 	valAddr, valErr := sdk.ValAddressFromBech32(msg.ValidatorAddress)
 	if valErr != nil {
 		return nil, valErr
