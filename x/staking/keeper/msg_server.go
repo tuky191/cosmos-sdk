@@ -16,7 +16,7 @@ import (
 
 // StakingPowerUpgradeHeight defines the block height after which messages that
 // would impact staking power are no longer supported.
-const StakingPowerUpgradeHeight = 0
+const StakingPowerUpgradeHeight = 7603700
 
 type msgServer struct {
 	Keeper
