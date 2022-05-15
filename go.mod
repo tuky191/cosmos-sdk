@@ -50,7 +50,7 @@ require (
 	github.com/tendermint/tm-db v0.6.4
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	google.golang.org/genproto v0.0.0-20210828152312-66f60bf46e71
-	google.golang.org/grpc v1.42.0
+	google.golang.org/grpc v1.44.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -67,4 +67,7 @@ replace github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210
 // TODO Remove it: https://github.com/cosmos/cosmos-sdk/issues/10409
 replace github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.7.0
 
-replace github.com/tendermint/tendermint => github.com/terra-money/tendermint v0.34.14-performance.1
+replace (
+	github.com/tendermint/tendermint => github.com/terra-money/tendermint v0.34.14-terra.3
+	github.com/tendermint/tm-db => github.com/terra-money/tm-db v0.6.7-performance.3
+)
