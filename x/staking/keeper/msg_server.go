@@ -17,6 +17,20 @@ import (
 // StakingPowerUpgradeHeight defines the block height after which messages that
 // would impact staking power are no longer supported.
 const StakingPowerUpgradeHeight = 7603700
+// StakingPowerRevertHeight re-enables the creation of validators after this 
+// block height.  This has been computed as approximately November 12, 2022.  109 days from July 26
+// 10 * 60 min * 24 hrs * 109 days = 1,569,600 blocks
+// current block height on July 26 is 8,655,689
+// projected block on November 12 is 8,655,689 + 1,569,600 = 10,225,289
+const StakingPowerRevertHeight = 10225289
+
+// DelegatePowerRevertHeight re-enables the ability to delegate stake to existing validators
+// Projected block is 48 days from July 26th, on September 12 
+// 10 * 60min * 24 hrs * 48 days = 691,200 blocks
+// current block height on July 26 is 8,655,689
+// projected block on June 25 is 8,655,689 + 691,200 = 9,346,889. 
+const DelegatePowerRevertHeight = 9346889
+
 
 type msgServer struct {
 	Keeper
@@ -35,7 +49,7 @@ func (k msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateVa
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	currHeight := ctx.BlockHeight()
-	if currHeight > StakingPowerUpgradeHeight {
+	if currHeight > StakingPowerUpgradeHeight && currHeight < StakingPowerRevertHeight {
 		return nil, sdkerrors.Wrapf(types.ErrMsgNotSupported, "message type %T is not supported at height %d", msg, currHeight)
 	}
 
@@ -199,7 +213,7 @@ func (k msgServer) Delegate(goCtx context.Context, msg *types.MsgDelegate) (*typ
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	currHeight := ctx.BlockHeight()
-	if currHeight > StakingPowerUpgradeHeight {
+	if currHeight > StakingPowerUpgradeHeight && currHeight < DelegatePowerRevertHeight {
 		return nil, sdkerrors.Wrapf(types.ErrMsgNotSupported, "message type %T is not supported at height %d", msg, currHeight)
 	}
 
@@ -224,6 +238,29 @@ func (k msgServer) Delegate(goCtx context.Context, msg *types.MsgDelegate) (*typ
 			sdkerrors.ErrInvalidRequest, "invalid coin denomination: got %s, expected %s", msg.Amount.Denom, bondDenom,
 		)
 	}
+
+	// If Delegations are allowed again, limit validator power to 20%
+        if currHeight >= DelegatePowerRevertHeight {
+	        // Get the Total Consensus Power of all Validators
+	        lastPower := k.Keeper.GetLastTotalPower(ctx)
+
+	        // Get the selected Validator's voting power
+	        validatorLastPower := k.Keeper.GetLastValidatorPower(ctx, valAddr)
+
+	        // Compute what the Validator's new power would be if this Delegation goes through
+	        validatorNewPower := int64(validatorLastPower) + sdk.TokensToConsensusPower(msg.Amount.Amount, k.Keeper.PowerReduction(ctx))
+
+	        // Compute what the Total Consensus Power would be if this Delegation goes through
+	        newTotalPower := lastPower.Int64() + sdk.TokensToConsensusPower(msg.Amount.Amount, k.Keeper.PowerReduction(ctx))
+
+	        // Compute what the new Validator voting power would be in relation to the new total power
+	        validatorIncreasedDelegationPercent := float32(validatorNewPower) / float32(newTotalPower)
+
+		// If Delegations are allowed, and the Delegation would have increased the Validator to over 20% of the staking power, do not allow the Delegation to proceed
+                if validatorIncreasedDelegationPercent > 0.2 {
+                        return nil, sdkerrors.Wrapf(types.ErrMsgNotSupported, "message type %T is over the allowed limit at height %d", msg, currHeight)
+                }
+        }
 
 	// NOTE: source funds are always unbonded
 	newShares, err := k.Keeper.Delegate(ctx, delegatorAddress, msg.Amount.Amount, types.Unbonded, validator, true)
