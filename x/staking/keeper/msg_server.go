@@ -18,18 +18,18 @@ import (
 // would impact staking power are no longer supported.
 const StakingPowerUpgradeHeight = 7603700
 // StakingPowerRevertHeight re-enables the creation of validators after this 
-// block height.  This has been computed as approximately November 12, 2022.  109 days from July 26
-// 10 * 60 min * 24 hrs * 109 days = 1,569,600 blocks
-// current block height on July 26 is 8,655,689
-// projected block on November 12 is 8,655,689 + 1,569,600 = 10,225,289
-const StakingPowerRevertHeight = 10225289
+// block height.  This has been computed as approximately October 26, 2022.  84 days from August 3
+// 10 * 60 min * 24 hrs * 84 days = 1,209,600 blocks
+// current block height on August 3 is 8,778,790
+// projected block on November 12 is 8,778,790 + 1,209,600 = 9,988,390
+const StakingPowerRevertHeight = 9988390
 
 // DelegatePowerRevertHeight re-enables the ability to delegate stake to existing validators
-// Projected block is 48 days from July 26th, on September 12 
-// 10 * 60min * 24 hrs * 48 days = 691,200 blocks
-// current block height on July 26 is 8,655,689
-// projected block on June 25 is 8,655,689 + 691,200 = 9,346,889. 
-const DelegatePowerRevertHeight = 9346889
+// Projected block is 23 days from August 3, on August 26 
+// 10 * 60min * 24 hrs * 23 days = 331,200 blocks
+// current block height on August 3 is 8,778,790
+// projected block on August 26 is 8,778,790 + 331,200 = 9,109,990. 
+const DelegatePowerRevertHeight = 9109990
 
 
 type msgServer struct {
