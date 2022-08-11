@@ -580,7 +580,7 @@ func (k Keeper) Delegate(
 		lastPower := k.GetLastTotalPower(ctx)
 
 		// Get the power of the current validator power
-		validatorLastPower := sdk.TokensToConsensusPower(validator.TokensFromShares(delegation.Shares).TruncateInt(), k.PowerReduction(ctx))
+		validatorLastPower := sdk.TokensToConsensusPower(validator.Tokens, k.PowerReduction(ctx))
 
 		// Get the new power of the validator if delegated the bond amount
 		validatorNewPower := int64(validatorLastPower) + sdk.TokensToConsensusPower(bondAmt, k.PowerReduction(ctx))
