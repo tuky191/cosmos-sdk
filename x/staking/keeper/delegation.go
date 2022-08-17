@@ -573,6 +573,29 @@ func (k Keeper) Delegate(
 		panic(err)
 	}
 
+	currHeight := ctx.BlockHeight()
+	// If Delegations are allowed again, limit validator power to 20%
+        if currHeight >= DelegatePowerRevertHeight {
+		// Get the last Total Power of the validator set
+		lastPower := k.GetLastTotalPower(ctx)
+
+		// Get the power of the current validator power
+		validatorLastPower := sdk.TokensToConsensusPower(validator.Tokens, k.PowerReduction(ctx))
+
+		// Get the new power of the validator if delegated the bond amount
+		validatorNewPower := int64(validatorLastPower) + sdk.TokensToConsensusPower(bondAmt, k.PowerReduction(ctx))
+
+		// Compute what the Total Consensus Power would be if this Delegation goes through
+		newTotalPower := lastPower.Int64() + sdk.TokensToConsensusPower(bondAmt, k.PowerReduction(ctx))
+
+		// Compute what the new Validator voting power would be in relation to the new total power
+		validatorIncreasedDelegationPercent := float32(validatorNewPower) / float32(newTotalPower)
+
+		// If Delegations are allowed, and the Delegation would have increased the Validator to over 20% of the staking power, do not allow the Delegation to proceed
+		if validatorIncreasedDelegationPercent > 0.2 {
+		        panic("validator power is over the allowed limit")
+		}
+	}
 	// if subtractAccount is true then we are
 	// performing a delegation and not a redelegation, thus the source tokens are
 	// all non bonded

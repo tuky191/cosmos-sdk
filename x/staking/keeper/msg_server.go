@@ -239,29 +239,6 @@ func (k msgServer) Delegate(goCtx context.Context, msg *types.MsgDelegate) (*typ
 		)
 	}
 
-	// If Delegations are allowed again, limit validator power to 20%
-        if currHeight >= DelegatePowerRevertHeight {
-	        // Get the Total Consensus Power of all Validators
-	        lastPower := k.Keeper.GetLastTotalPower(ctx)
-
-	        // Get the selected Validator's voting power
-	        validatorLastPower := k.Keeper.GetLastValidatorPower(ctx, valAddr)
-
-	        // Compute what the Validator's new power would be if this Delegation goes through
-	        validatorNewPower := int64(validatorLastPower) + sdk.TokensToConsensusPower(msg.Amount.Amount, k.Keeper.PowerReduction(ctx))
-
-	        // Compute what the Total Consensus Power would be if this Delegation goes through
-	        newTotalPower := lastPower.Int64() + sdk.TokensToConsensusPower(msg.Amount.Amount, k.Keeper.PowerReduction(ctx))
-
-	        // Compute what the new Validator voting power would be in relation to the new total power
-	        validatorIncreasedDelegationPercent := float32(validatorNewPower) / float32(newTotalPower)
-
-		// If Delegations are allowed, and the Delegation would have increased the Validator to over 20% of the staking power, do not allow the Delegation to proceed
-                if validatorIncreasedDelegationPercent > 0.2 {
-                        return nil, sdkerrors.Wrapf(types.ErrMsgNotSupported, "message type %T is over the allowed limit at height %d", msg, currHeight)
-                }
-        }
-
 	// NOTE: source funds are always unbonded
 	newShares, err := k.Keeper.Delegate(ctx, delegatorAddress, msg.Amount.Amount, types.Unbonded, validator, true)
 	if err != nil {
