@@ -272,7 +272,7 @@ func AddCommands(rootCmd *cobra.Command, defaultNodeHome string, appCreator type
 		ShowAddressCmd(),
 		VersionCmd(),
 		tmcmd.ResetAllCmd,
-		tmcmd.ResetStateCmd,
+	//	tmcmd.ResetStateCmd, // commented out by Jacob Gadikian as part of the dragonberry patch
 	)
 
 	startCmd := StartCmd(appCreator, defaultNodeHome)
