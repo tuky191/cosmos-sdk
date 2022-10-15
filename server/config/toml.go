@@ -22,7 +22,7 @@ minimum-gas-prices = "{{ .BaseConfig.MinGasPrices }}"
 
 # default: the last 100 states are kept in addition to every 500th state; pruning at 10 block intervals
 # nothing: all historic states will be saved, nothing will be deleted (i.e. archiving node)
-# everything: all saved states will be deleted, storing only the current state; pruning at 10 block intervals
+# everything: all saved states will be deleted, storing only the current and previous state; pruning at 10 block intervals
 # custom: allow pruning options to be manually specified through 'pruning-keep-recent', 'pruning-keep-every', and 'pruning-interval'
 pruning = "{{ .BaseConfig.Pruning }}"
 
@@ -76,11 +76,13 @@ inter-block-cache-size = {{ .BaseConfig.InterBlockCacheSize }}
 # ["message.sender", "message.recipient"]
 index-events = {{ .BaseConfig.IndexEvents }}
 
-# IAVLCacheSize set the cache size (the number of cache items) of the iavl tree. 
-# Each item size consumes 128 bytes, so the value should be dividend by 128
-# Default cache size is 100mb.
-# Ex) 100mb = 100,000,000 / 128 = 781,250
+# IavlCacheSize set the size of the iavl tree cache. 
+# Default cache size is 50mb.
 iavl-cache-size = {{ .BaseConfig.IAVLCacheSize }}
+
+# IAVLDisableFastNode enables or disables the fast node feature of IAVL. 
+# Default is true.
+iavl-disable-fastnode = {{ .BaseConfig.IAVLDisableFastNode }}
 
 ###############################################################################
 ###                         Telemetry Configuration                         ###
@@ -257,5 +259,5 @@ func WriteConfigFile(configFilePath string, config interface{}) {
 		panic(err)
 	}
 
-	tmos.MustWriteFile(configFilePath, buffer.Bytes(), 0644)
+	tmos.MustWriteFile(configFilePath, buffer.Bytes(), 0o644)
 }

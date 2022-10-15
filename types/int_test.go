@@ -91,6 +91,9 @@ func (s *intTestSuite) TestIntPanic() {
 	s.Require().Panics(func() { intmax.Add(sdk.OneInt()) })
 	s.Require().Panics(func() { intmin.Sub(sdk.OneInt()) })
 
+	s.Require().NotPanics(func() { sdk.NewIntFromBigInt(nil) })
+	s.Require().True(sdk.NewIntFromBigInt(nil).IsNil())
+
 	// Division-by-zero check
 	s.Require().Panics(func() { i1.Quo(sdk.NewInt(0)) })
 
@@ -167,7 +170,6 @@ func (s *intTestSuite) TestArithInt() {
 			s.Require().Equal(tc.nres, tc.ires.Int64(), "Int arithmetic operation does not match with int64 operation. tc #%d", tcnum)
 		}
 	}
-
 }
 
 func (s *intTestSuite) TestCompInt() {
@@ -391,7 +393,7 @@ func (s *intTestSuite) TestIntEq() {
 }
 
 func TestRoundTripMarshalToInt(t *testing.T) {
-	var values = []int64{
+	values := []int64{
 		0,
 		1,
 		1 << 10,

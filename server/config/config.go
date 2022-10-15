@@ -6,8 +6,6 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/cosmos/cosmos-sdk/store/cache"
-	"github.com/cosmos/cosmos-sdk/store/iavl"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -77,6 +75,9 @@ type BaseConfig struct {
 
 	// IavlCacheSize set the size of the iavl tree cache.
 	IAVLCacheSize uint64 `mapstructure:"iavl-cache-size"`
+
+	// IAVLDisableFastNode enables or disables the fast sync node.
+	IAVLDisableFastNode bool `mapstructure:"iavl-disable-fastnode"`
 }
 
 // APIConfig defines the API listener configuration.
@@ -211,14 +212,14 @@ func DefaultConfig() *Config {
 		BaseConfig: BaseConfig{
 			MinGasPrices:        defaultMinGasPrices,
 			InterBlockCache:     true,
-			InterBlockCacheSize: cache.DefaultCommitKVStoreCacheSize,
 			Pruning:             storetypes.PruningOptionDefault,
 			PruningKeepRecent:   "0",
 			PruningKeepEvery:    "0",
 			PruningInterval:     "0",
 			MinRetainBlocks:     0,
 			IndexEvents:         make([]string, 0),
-			IAVLCacheSize:       iavl.DefaultIAVLCacheSize,
+			IAVLCacheSize:       781250, // 50 MB
+			IAVLDisableFastNode: true,
 		},
 		Telemetry: telemetry.Config{
 			Enabled:      false,
@@ -256,11 +257,18 @@ func DefaultConfig() *Config {
 }
 
 // GetConfig returns a fully parsed Config object.
-func GetConfig(v *viper.Viper) Config {
-	globalLabelsRaw := v.Get("telemetry.global-labels").([]interface{})
+func GetConfig(v *viper.Viper) (Config, error) {
+	globalLabelsRaw, ok := v.Get("telemetry.global-labels").([]interface{})
+	if !ok {
+		return Config{}, fmt.Errorf("failed to parse global-labels config")
+	}
+
 	globalLabels := make([][]string, 0, len(globalLabelsRaw))
-	for _, glr := range globalLabelsRaw {
-		labelsRaw := glr.([]interface{})
+	for idx, glr := range globalLabelsRaw {
+		labelsRaw, ok := glr.([]interface{})
+		if !ok {
+			return Config{}, fmt.Errorf("failed to parse global label number %d from config", idx)
+		}
 		if len(labelsRaw) == 2 {
 			globalLabels = append(globalLabels, []string{labelsRaw[0].(string), labelsRaw[1].(string)})
 		}
@@ -270,16 +278,15 @@ func GetConfig(v *viper.Viper) Config {
 		BaseConfig: BaseConfig{
 			MinGasPrices:        v.GetString("minimum-gas-prices"),
 			InterBlockCache:     v.GetBool("inter-block-cache"),
-			InterBlockCacheSize: v.GetUint("inter-block-cache-size"),
 			Pruning:             v.GetString("pruning"),
 			PruningKeepRecent:   v.GetString("pruning-keep-recent"),
-			PruningKeepEvery:    v.GetString("pruning-keep-every"),
 			PruningInterval:     v.GetString("pruning-interval"),
 			HaltHeight:          v.GetUint64("halt-height"),
 			HaltTime:            v.GetUint64("halt-time"),
 			IndexEvents:         v.GetStringSlice("index-events"),
 			MinRetainBlocks:     v.GetUint64("min-retain-blocks"),
 			IAVLCacheSize:       v.GetUint64("iavl-cache-size"),
+			IAVLDisableFastNode: v.GetBool("iavl-disable-fastnode"),
 		},
 		Telemetry: telemetry.Config{
 			ServiceName:             v.GetString("telemetry.service-name"),
@@ -321,13 +328,18 @@ func GetConfig(v *viper.Viper) Config {
 			SnapshotInterval:   v.GetUint64("state-sync.snapshot-interval"),
 			SnapshotKeepRecent: v.GetUint32("state-sync.snapshot-keep-recent"),
 		},
-	}
+	}, nil
 }
 
 // ValidateBasic returns an error if min-gas-prices field is empty in BaseConfig. Otherwise, it returns nil.
 func (c Config) ValidateBasic() error {
 	if c.BaseConfig.MinGasPrices == "" {
 		return sdkerrors.ErrAppConfig.Wrap("set min gas price in app.toml or flag or env variable")
+	}
+	if c.Pruning == storetypes.PruningOptionEverything && c.StateSync.SnapshotInterval > 0 {
+		return sdkerrors.ErrAppConfig.Wrapf(
+			"cannot enable state sync snapshots with '%s' pruning setting", storetypes.PruningOptionEverything,
+		)
 	}
 
 	return nil
