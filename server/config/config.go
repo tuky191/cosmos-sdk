@@ -2,11 +2,13 @@ package config
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/spf13/viper"
 
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	clientflags "github.com/cosmos/cosmos-sdk/client/flags"
+	pruningtypes "github.com/cosmos/cosmos-sdk/pruning/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -15,11 +17,25 @@ import (
 const (
 	defaultMinGasPrices = ""
 
+	// DefaultAPIAddress defines the default address to bind the API server to.
+	DefaultAPIAddress = "tcp://0.0.0.0:1317"
+
 	// DefaultGRPCAddress defines the default address to bind the gRPC server to.
 	DefaultGRPCAddress = "0.0.0.0:9090"
 
 	// DefaultGRPCWebAddress defines the default address to bind the gRPC-web server to.
 	DefaultGRPCWebAddress = "0.0.0.0:9091"
+
+	// DefaultGRPCMaxRecvMsgSize defines the default gRPC max message size in
+	// bytes the server can receive.
+	DefaultGRPCMaxRecvMsgSize = 1024 * 1024 * 10
+
+	// DefaultGRPCMaxSendMsgSize defines the default gRPC max message size in
+	// bytes the server can send.
+	DefaultGRPCMaxSendMsgSize = math.MaxInt32
+
+	// FileStreamer defines the store streaming type for file streaming.
+	FileStreamer = "file"
 )
 
 // BaseConfig defines the server's basic configuration
@@ -31,7 +47,6 @@ type BaseConfig struct {
 
 	Pruning           string `mapstructure:"pruning"`
 	PruningKeepRecent string `mapstructure:"pruning-keep-recent"`
-	PruningKeepEvery  string `mapstructure:"pruning-keep-every"`
 	PruningInterval   string `mapstructure:"pruning-interval"`
 
 	// HaltHeight contains a non-zero block height at which a node will gracefully
@@ -75,6 +90,10 @@ type BaseConfig struct {
 
 	// IAVLDisableFastNode enables or disables the fast sync node.
 	IAVLDisableFastNode bool `mapstructure:"iavl-disable-fastnode"`
+
+	// AppDBBackend defines the type of Database to use for the application and snapshots databases.
+	// An empty string indicates that the Tendermint config's DBBackend value should be used.
+	AppDBBackend string `mapstructure:"app-db-backend"`
 }
 
 // APIConfig defines the API listener configuration.
@@ -129,6 +148,15 @@ type RosettaConfig struct {
 
 	// Offline defines if the server must be run in offline mode
 	Offline bool `mapstructure:"offline"`
+
+	// EnableFeeSuggestion defines if the server should suggest fee by default
+	EnableFeeSuggestion bool `mapstructure:"enable-fee-suggestion"`
+
+	// GasToSuggest defines gas limit when calculating the fee
+	GasToSuggest int `mapstructure:"gas-to-suggest"`
+
+	// DenomToSuggest defines the defult denom for fee suggestion
+	DenomToSuggest string `mapstructure:"denom-to-suggest"`
 }
 
 // GRPCConfig defines configuration for the gRPC server.
@@ -138,6 +166,14 @@ type GRPCConfig struct {
 
 	// Address defines the API server to listen on
 	Address string `mapstructure:"address"`
+
+	// MaxRecvMsgSize defines the max message size in bytes the server can receive.
+	// The default value is 10MB.
+	MaxRecvMsgSize int `mapstructure:"max-recv-msg-size"`
+
+	// MaxSendMsgSize defines the max message size in bytes the server can send.
+	// The default value is math.MaxInt32.
+	MaxSendMsgSize int `mapstructure:"max-send-msg-size"`
 }
 
 // GRPCWebConfig defines configuration for the gRPC-web server.
@@ -155,13 +191,44 @@ type GRPCWebConfig struct {
 // StateSyncConfig defines the state sync snapshot configuration.
 type StateSyncConfig struct {
 	// SnapshotInterval sets the interval at which state sync snapshots are taken.
-	// 0 disables snapshots. Must be a multiple of PruningKeepEvery.
+	// 0 disables snapshots.
 	SnapshotInterval uint64 `mapstructure:"snapshot-interval"`
 
 	// SnapshotKeepRecent sets the number of recent state sync snapshots to keep.
 	// 0 keeps all snapshots.
 	SnapshotKeepRecent uint32 `mapstructure:"snapshot-keep-recent"`
 }
+
+type (
+	// StoreConfig defines application configuration for state streaming and other
+	// storage related operations.
+	StoreConfig struct {
+		Streamers []string `mapstructure:"streamers"`
+	}
+
+	// StreamersConfig defines concrete state streaming configuration options. These
+	// fields are required to be set when state streaming is enabled via a non-empty
+	// list defined by 'StoreConfig.Streamers'.
+	StreamersConfig struct {
+		File FileStreamerConfig `mapstructure:"file"`
+	}
+
+	// FileStreamerConfig defines the file streaming configuration options.
+	FileStreamerConfig struct {
+		Keys     []string `mapstructure:"keys"`
+		WriteDir string   `mapstructure:"write_dir"`
+		Prefix   string   `mapstructure:"prefix"`
+		// OutputMetadata specifies if output the block metadata file which includes
+		// the abci requests/responses, otherwise only the data file is outputted.
+		OutputMetadata bool `mapstructure:"output-metadata"`
+		// StopNodeOnError specifies if propagate the streamer errors to the consensus
+		// state machine, it's nesserary for data integrity of output.
+		StopNodeOnError bool `mapstructure:"stop-node-on-error"`
+		// Fsync specifies if calling fsync after writing the files, it slows down
+		// the commit, but don't lose data in face of system crash.
+		Fsync bool `mapstructure:"fsync"`
+	}
+)
 
 // Config defines the server's top level configuration
 type Config struct {
@@ -174,6 +241,8 @@ type Config struct {
 	Rosetta   RosettaConfig    `mapstructure:"rosetta"`
 	GRPCWeb   GRPCWebConfig    `mapstructure:"grpc-web"`
 	StateSync StateSyncConfig  `mapstructure:"state-sync"`
+	Store     StoreConfig      `mapstructure:"store"`
+	Streamers StreamersConfig  `mapstructure:"streamers"`
 }
 
 // SetMinGasPrices sets the validator's minimum gas prices.
@@ -209,14 +278,14 @@ func DefaultConfig() *Config {
 		BaseConfig: BaseConfig{
 			MinGasPrices:        defaultMinGasPrices,
 			InterBlockCache:     true,
-			Pruning:             storetypes.PruningOptionDefault,
+			Pruning:             pruningtypes.PruningOptionDefault,
 			PruningKeepRecent:   "0",
-			PruningKeepEvery:    "0",
 			PruningInterval:     "0",
 			MinRetainBlocks:     0,
 			IndexEvents:         make([]string, 0),
 			IAVLCacheSize:       781250, // 50 MB
-			IAVLDisableFastNode: true,
+			IAVLDisableFastNode: false,
+			AppDBBackend:        "",
 		},
 		Telemetry: telemetry.Config{
 			Enabled:      false,
@@ -225,22 +294,27 @@ func DefaultConfig() *Config {
 		API: APIConfig{
 			Enable:             false,
 			Swagger:            false,
-			Address:            "tcp://0.0.0.0:1317",
+			Address:            DefaultAPIAddress,
 			MaxOpenConnections: 1000,
 			RPCReadTimeout:     10,
 			RPCMaxBodyBytes:    1000000,
 		},
 		GRPC: GRPCConfig{
-			Enable:  true,
-			Address: DefaultGRPCAddress,
+			Enable:         true,
+			Address:        DefaultGRPCAddress,
+			MaxRecvMsgSize: DefaultGRPCMaxRecvMsgSize,
+			MaxSendMsgSize: DefaultGRPCMaxSendMsgSize,
 		},
 		Rosetta: RosettaConfig{
-			Enable:     false,
-			Address:    ":8080",
-			Blockchain: "app",
-			Network:    "network",
-			Retries:    3,
-			Offline:    false,
+			Enable:              false,
+			Address:             ":8080",
+			Blockchain:          "app",
+			Network:             "network",
+			Retries:             3,
+			Offline:             false,
+			EnableFeeSuggestion: false,
+			GasToSuggest:        clientflags.DefaultGasLimit,
+			DenomToSuggest:      "uatom",
 		},
 		GRPCWeb: GRPCWebConfig{
 			Enable:  true,
@@ -250,83 +324,30 @@ func DefaultConfig() *Config {
 			SnapshotInterval:   0,
 			SnapshotKeepRecent: 2,
 		},
+		Store: StoreConfig{
+			Streamers: []string{},
+		},
+		Streamers: StreamersConfig{
+			File: FileStreamerConfig{
+				Keys:            []string{"*"},
+				WriteDir:        "",
+				OutputMetadata:  true,
+				StopNodeOnError: true,
+				// NOTICE: The default config doesn't protect the streamer data integrity
+				// in face of system crash.
+				Fsync: false,
+			},
+		},
 	}
 }
 
 // GetConfig returns a fully parsed Config object.
 func GetConfig(v *viper.Viper) (Config, error) {
-	globalLabelsRaw, ok := v.Get("telemetry.global-labels").([]interface{})
-	if !ok {
-		return Config{}, fmt.Errorf("failed to parse global-labels config")
+	conf := DefaultConfig()
+	if err := v.Unmarshal(conf); err != nil {
+		return Config{}, fmt.Errorf("error extracting app config: %w", err)
 	}
-
-	globalLabels := make([][]string, 0, len(globalLabelsRaw))
-	for idx, glr := range globalLabelsRaw {
-		labelsRaw, ok := glr.([]interface{})
-		if !ok {
-			return Config{}, fmt.Errorf("failed to parse global label number %d from config", idx)
-		}
-		if len(labelsRaw) == 2 {
-			globalLabels = append(globalLabels, []string{labelsRaw[0].(string), labelsRaw[1].(string)})
-		}
-	}
-
-	return Config{
-		BaseConfig: BaseConfig{
-			MinGasPrices:        v.GetString("minimum-gas-prices"),
-			InterBlockCache:     v.GetBool("inter-block-cache"),
-			Pruning:             v.GetString("pruning"),
-			PruningKeepRecent:   v.GetString("pruning-keep-recent"),
-			PruningKeepEvery:    v.GetString("pruning-keep-every"),
-			PruningInterval:     v.GetString("pruning-interval"),
-			HaltHeight:          v.GetUint64("halt-height"),
-			HaltTime:            v.GetUint64("halt-time"),
-			IndexEvents:         v.GetStringSlice("index-events"),
-			MinRetainBlocks:     v.GetUint64("min-retain-blocks"),
-			IAVLCacheSize:       v.GetUint64("iavl-cache-size"),
-			IAVLDisableFastNode: v.GetBool("iavl-disable-fastnode"),
-		},
-		Telemetry: telemetry.Config{
-			ServiceName:             v.GetString("telemetry.service-name"),
-			Enabled:                 v.GetBool("telemetry.enabled"),
-			EnableHostname:          v.GetBool("telemetry.enable-hostname"),
-			EnableHostnameLabel:     v.GetBool("telemetry.enable-hostname-label"),
-			EnableServiceLabel:      v.GetBool("telemetry.enable-service-label"),
-			PrometheusRetentionTime: v.GetInt64("telemetry.prometheus-retention-time"),
-			GlobalLabels:            globalLabels,
-		},
-		API: APIConfig{
-			Enable:             v.GetBool("api.enable"),
-			Swagger:            v.GetBool("api.swagger"),
-			Address:            v.GetString("api.address"),
-			MaxOpenConnections: v.GetUint("api.max-open-connections"),
-			RPCReadTimeout:     v.GetUint("api.rpc-read-timeout"),
-			RPCWriteTimeout:    v.GetUint("api.rpc-write-timeout"),
-			RPCMaxBodyBytes:    v.GetUint("api.rpc-max-body-bytes"),
-			EnableUnsafeCORS:   v.GetBool("api.enabled-unsafe-cors"),
-		},
-		Rosetta: RosettaConfig{
-			Enable:     v.GetBool("rosetta.enable"),
-			Address:    v.GetString("rosetta.address"),
-			Blockchain: v.GetString("rosetta.blockchain"),
-			Network:    v.GetString("rosetta.network"),
-			Retries:    v.GetInt("rosetta.retries"),
-			Offline:    v.GetBool("rosetta.offline"),
-		},
-		GRPC: GRPCConfig{
-			Enable:  v.GetBool("grpc.enable"),
-			Address: v.GetString("grpc.address"),
-		},
-		GRPCWeb: GRPCWebConfig{
-			Enable:           v.GetBool("grpc-web.enable"),
-			Address:          v.GetString("grpc-web.address"),
-			EnableUnsafeCORS: v.GetBool("grpc-web.enable-unsafe-cors"),
-		},
-		StateSync: StateSyncConfig{
-			SnapshotInterval:   v.GetUint64("state-sync.snapshot-interval"),
-			SnapshotKeepRecent: v.GetUint32("state-sync.snapshot-keep-recent"),
-		},
-	}, nil
+	return *conf, nil
 }
 
 // ValidateBasic returns an error if min-gas-prices field is empty in BaseConfig. Otherwise, it returns nil.
@@ -334,9 +355,9 @@ func (c Config) ValidateBasic() error {
 	if c.BaseConfig.MinGasPrices == "" {
 		return sdkerrors.ErrAppConfig.Wrap("set min gas price in app.toml or flag or env variable")
 	}
-	if c.Pruning == storetypes.PruningOptionEverything && c.StateSync.SnapshotInterval > 0 {
+	if c.Pruning == pruningtypes.PruningOptionEverything && c.StateSync.SnapshotInterval > 0 {
 		return sdkerrors.ErrAppConfig.Wrapf(
-			"cannot enable state sync snapshots with '%s' pruning setting", storetypes.PruningOptionEverything,
+			"cannot enable state sync snapshots with '%s' pruning setting", pruningtypes.PruningOptionEverything,
 		)
 	}
 
