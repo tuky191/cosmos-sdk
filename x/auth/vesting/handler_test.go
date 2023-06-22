@@ -1,7 +1,9 @@
 package vesting_test
 
 import (
+	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
@@ -108,8 +110,22 @@ func (suite *HandlerTestSuite) TestMsgDonateVestingToken() {
 	addr1 := sdk.AccAddress([]byte("addr1_______________"))
 	addr2 := sdk.AccAddress([]byte("addr2_______________"))
 	addr3 := sdk.AccAddress([]byte("addr3_______________"))
+	addr4 := sdk.AccAddress([]byte("addr4_______________"))
 
 	valAddr := sdk.ValAddress([]byte("validator___________"))
+	suite.app.StakingKeeper.SetValidator(ctx, stakingtypes.Validator{
+		OperatorAddress:   valAddr.String(),
+		ConsensusPubkey:   nil,
+		Jailed:            false,
+		Status:            0,
+		Tokens:            sdk.NewInt(2),
+		DelegatorShares:   sdk.MustNewDecFromStr("1.1"),
+		Description:       stakingtypes.Description{},
+		UnbondingHeight:   0,
+		UnbondingTime:     time.Time{},
+		Commission:        stakingtypes.Commission{},
+		MinSelfDelegation: sdk.NewInt(1),
+	})
 
 	acc1 := suite.app.AccountKeeper.NewAccountWithAddress(ctx, addr1)
 	suite.app.AccountKeeper.SetAccount(ctx, acc1)
@@ -133,6 +149,18 @@ func (suite *HandlerTestSuite) TestMsgDonateVestingToken() {
 	suite.app.AccountKeeper.SetAccount(ctx, acc3)
 	suite.Require().NoError(simapp.FundAccount(suite.app.BankKeeper, ctx, addr3, balances))
 
+	acc4 := types.NewPermanentLockedAccount(
+		suite.app.AccountKeeper.NewAccountWithAddress(ctx, addr4).(*authtypes.BaseAccount), balances,
+	)
+	acc4.DelegatedVesting = balances
+	suite.app.AccountKeeper.SetAccount(ctx, acc4)
+	suite.app.StakingKeeper.SetDelegation(ctx, stakingtypes.Delegation{
+		DelegatorAddress: addr4.String(),
+		ValidatorAddress: valAddr.String(),
+		Shares:           sdk.MustNewDecFromStr("0.1"),
+	})
+	suite.Require().NoError(simapp.FundAccount(suite.app.BankKeeper, ctx, addr4, balances))
+
 	testCases := []struct {
 		name      string
 		msg       *types.MsgDonateAllVestingTokens
@@ -153,12 +181,19 @@ func (suite *HandlerTestSuite) TestMsgDonateVestingToken() {
 			msg:       types.NewMsgDonateAllVestingTokens(addr3),
 			expectErr: false,
 		},
+		{
+			name:      "donate from vesting account with dust delegation",
+			msg:       types.NewMsgDonateAllVestingTokens(addr4),
+			expectErr: false,
+		},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
 
 		suite.Run(tc.name, func() {
+			// Rollback context after every test case
+			ctx, _ := ctx.CacheContext()
 			res, err := suite.handler(ctx, tc.msg)
 			if tc.expectErr {
 				suite.Require().Error(err)
@@ -178,6 +213,9 @@ func (suite *HandlerTestSuite) TestMsgDonateVestingToken() {
 				suite.Require().True(ok)
 				balance := suite.app.BankKeeper.GetAllBalances(ctx, fromAddr)
 				suite.Require().Empty(balance)
+
+				_, broken := stakingkeeper.DelegatorSharesInvariant(suite.app.StakingKeeper)(ctx)
+				suite.Require().False(broken)
 			}
 		})
 	}
