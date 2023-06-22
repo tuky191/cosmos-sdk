@@ -35,6 +35,9 @@ jobs:
             **/**.go
             **/go.mod
             **/go.sum
+      - name: Update deps
+        run: go mod tidy
+
       - name: Build
         run: GOARCH=${{ matrix.go-arch }} LEDGER_ENABLED=false make build
 
@@ -56,6 +59,8 @@ jobs:
             **/**.go
             go.mod
             go.sum
+      - name: Update deps
+        run: go mod tidy
       - name: Run submodule tests and create test coverage profile.
         # GIT_DIFF is passed to the scripts
         run: bash scripts/module-tests.sh
@@ -191,6 +196,8 @@ jobs:
             **/**.go
             go.mod
             go.sum
+      - name: Update deps
+        run: go mod tidy
       - name: test rosetta
         run: |
           make test-rosetta
@@ -211,6 +218,8 @@ jobs:
             **/**.go
             go.mod
             go.sum
+      - name: Update deps
+        run: go mod tidy
       - name: start localnet
         run: |
           make clean localnet-start
@@ -252,6 +261,8 @@ jobs:
             **/**.go
             go.mod
             go.sum
+      - name: Update deps
+        run: go mod tidy
       - uses: actions/cache@v3
         with:
           path: ~/go/bin
