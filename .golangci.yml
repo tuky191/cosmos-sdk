@@ -41,8 +41,7 @@ issues:
     - text: "should be written without leading space as"
       linters:
         - nolintlint
-    - path: "migrations"
-      text: "SA1019:"
+    - text: "SA1019:"
       linters:
         - staticcheck
 
