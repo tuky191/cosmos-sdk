@@ -2,6 +2,8 @@ package vesting
 
 import (
 	"context"
+	"fmt"
+	"math"
 
 	"github.com/armon/go-metrics"
 
@@ -87,8 +89,7 @@ func (s msgServer) CreateVestingAccount(goCtx context.Context, msg *types.MsgCre
 		}
 	}()
 
-	err = bk.SendCoins(ctx, from, to, msg.Amount)
-	if err != nil {
+	if err = bk.SendCoins(ctx, from, to, msg.Amount); err != nil {
 		return nil, err
 	}
 
@@ -148,8 +149,7 @@ func (s msgServer) CreatePermanentLockedAccount(goCtx context.Context, msg *type
 		}
 	}()
 
-	err = bk.SendCoins(ctx, from, to, msg.Amount)
-	if err != nil {
+	if err = bk.SendCoins(ctx, from, to, msg.Amount); err != nil {
 		return nil, err
 	}
 
@@ -183,9 +183,12 @@ func (s msgServer) CreatePeriodicVestingAccount(goCtx context.Context, msg *type
 	}
 
 	var totalCoins sdk.Coins
-
 	for _, period := range msg.VestingPeriods {
 		totalCoins = totalCoins.Add(period.Amount...)
+	}
+
+	if err := bk.IsSendEnabledCoins(ctx, totalCoins...); err != nil {
+		return nil, err
 	}
 
 	baseAccount := authtypes.NewBaseAccountWithAddress(to)
@@ -208,8 +211,7 @@ func (s msgServer) CreatePeriodicVestingAccount(goCtx context.Context, msg *type
 		}
 	}()
 
-	err = bk.SendCoins(ctx, from, to, totalCoins)
-	if err != nil {
+	if err = bk.SendCoins(ctx, from, to, totalCoins); err != nil {
 		return nil, err
 	}
 
@@ -239,9 +241,33 @@ func (s msgServer) DonateAllVestingTokens(goCtx context.Context, msg *types.MsgD
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "account %s not exists", msg.FromAddress)
 	}
 
-	// check whether an account has any type of staking entry
-	if len(sk.GetDelegatorDelegations(ctx, acc.GetAddress(), 1)) != 0 ||
-		len(sk.GetUnbondingDelegations(ctx, acc.GetAddress(), 1)) != 0 ||
+	// get all delegations of an account and undust those that have less than 1 uluna
+	delegations := sk.GetDelegatorDelegations(ctx, acc.GetAddress(), math.MaxUint16)
+	for _, delegation := range delegations {
+		validatorAddr, err := sdk.ValAddressFromBech32(delegation.ValidatorAddress)
+		if err != nil {
+			return nil, err
+		}
+		validator, found := sk.GetValidator(ctx, validatorAddr)
+		if !found {
+			return nil, fmt.Errorf("validator not found")
+		}
+		// Try to delete the dust delegation
+		_, removedTokens := sk.RemoveValidatorTokensAndShares(ctx, validator, delegation.Shares)
+		// If the delegation is not dust, return an error and stop the donation flow
+		if !removedTokens.IsZero() {
+			return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "account %s has a non-zero staking entry", msg.FromAddress)
+		}
+
+		// Remove the dust delegation shares from the validator
+		err = sk.RemoveDelegation(ctx, delegation)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// check whether an account has any other type of staking entries
+	if len(sk.GetUnbondingDelegations(ctx, acc.GetAddress(), 1)) != 0 ||
 		len(sk.GetRedelegations(ctx, acc.GetAddress(), 1)) != 0 {
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "account %s has staking entry", msg.FromAddress)
 	}
