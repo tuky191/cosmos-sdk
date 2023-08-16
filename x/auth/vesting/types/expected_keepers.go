@@ -2,6 +2,7 @@ package types
 
 import (
 	"cosmossdk.io/math"
+	"github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
@@ -16,6 +17,12 @@ type BankKeeper interface {
 
 // DistrKeeper defines the expected interface for distribution keeper
 type DistrKeeper interface {
+	GetAuthority() string
+	Logger(ctx sdk.Context) log.Logger
+	SetWithdrawAddr(ctx sdk.Context, delegatorAddr sdk.AccAddress, withdrawAddr sdk.AccAddress) error
+	WithdrawDelegationRewards(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) (sdk.Coins, error)
+	WithdrawValidatorCommission(ctx sdk.Context, valAddr sdk.ValAddress) (sdk.Coins, error)
+	GetTotalRewards(ctx sdk.Context) (totalRewards sdk.DecCoins)
 	FundCommunityPool(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error
 }
 
