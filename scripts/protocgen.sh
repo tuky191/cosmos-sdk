@@ -31,7 +31,3 @@ cd ..
 # move proto files to the right places
 cp -r github.com/cosmos/cosmos-sdk/* ./
 rm -rf github.com
-
-go mod tidy
-
-./scripts/protocgen-pulsar.sh
