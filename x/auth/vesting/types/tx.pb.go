@@ -254,7 +254,7 @@ func (m *MsgCreatePermanentLockedAccountResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgCreatePermanentLockedAccountResponse proto.InternalMessageInfo
 
-// MsgCreatePeriodicVestingAccount defines a message that enables creating a vesting
+// MsgCreateVestingAccount defines a message that enables creating a vesting
 // account.
 //
 // Since: cosmos-sdk 0.46
@@ -327,7 +327,7 @@ func (m *MsgCreatePeriodicVestingAccount) GetVestingPeriods() []Period {
 	return nil
 }
 
-// MsgCreatePeriodicVestingAccountResponse defines the Msg/CreatePeriodicVestingAccount
+// MsgCreateVestingAccountResponse defines the Msg/CreatePeriodicVestingAccount
 // response type.
 //
 // Since: cosmos-sdk 0.46
@@ -369,90 +369,6 @@ func (m *MsgCreatePeriodicVestingAccountResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgCreatePeriodicVestingAccountResponse proto.InternalMessageInfo
 
-// MsgDonateAllVestingTokens defines a message that enables donating all vesting
-// token to community pool.
-type MsgDonateAllVestingTokens struct {
-	FromAddress string `protobuf:"bytes,1,opt,name=from_address,json=fromAddress,proto3" json:"from_address,omitempty" yaml:"from_address"`
-}
-
-func (m *MsgDonateAllVestingTokens) Reset()         { *m = MsgDonateAllVestingTokens{} }
-func (m *MsgDonateAllVestingTokens) String() string { return proto.CompactTextString(m) }
-func (*MsgDonateAllVestingTokens) ProtoMessage()    {}
-func (*MsgDonateAllVestingTokens) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5338ca97811f9792, []int{6}
-}
-func (m *MsgDonateAllVestingTokens) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *MsgDonateAllVestingTokens) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MsgDonateAllVestingTokens.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *MsgDonateAllVestingTokens) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgDonateAllVestingTokens.Merge(m, src)
-}
-func (m *MsgDonateAllVestingTokens) XXX_Size() int {
-	return m.Size()
-}
-func (m *MsgDonateAllVestingTokens) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgDonateAllVestingTokens.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_MsgDonateAllVestingTokens proto.InternalMessageInfo
-
-func (m *MsgDonateAllVestingTokens) GetFromAddress() string {
-	if m != nil {
-		return m.FromAddress
-	}
-	return ""
-}
-
-// MsgDonateAllVestingTokensResponse defines the Msg/MsgDonateAllVestingTokens
-// response type.
-type MsgDonateAllVestingTokensResponse struct {
-}
-
-func (m *MsgDonateAllVestingTokensResponse) Reset()         { *m = MsgDonateAllVestingTokensResponse{} }
-func (m *MsgDonateAllVestingTokensResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgDonateAllVestingTokensResponse) ProtoMessage()    {}
-func (*MsgDonateAllVestingTokensResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5338ca97811f9792, []int{7}
-}
-func (m *MsgDonateAllVestingTokensResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *MsgDonateAllVestingTokensResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MsgDonateAllVestingTokensResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *MsgDonateAllVestingTokensResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgDonateAllVestingTokensResponse.Merge(m, src)
-}
-func (m *MsgDonateAllVestingTokensResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *MsgDonateAllVestingTokensResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgDonateAllVestingTokensResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_MsgDonateAllVestingTokensResponse proto.InternalMessageInfo
-
 func init() {
 	proto.RegisterType((*MsgCreateVestingAccount)(nil), "cosmos.vesting.v1beta1.MsgCreateVestingAccount")
 	proto.RegisterType((*MsgCreateVestingAccountResponse)(nil), "cosmos.vesting.v1beta1.MsgCreateVestingAccountResponse")
@@ -460,8 +376,6 @@ func init() {
 	proto.RegisterType((*MsgCreatePermanentLockedAccountResponse)(nil), "cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccountResponse")
 	proto.RegisterType((*MsgCreatePeriodicVestingAccount)(nil), "cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccount")
 	proto.RegisterType((*MsgCreatePeriodicVestingAccountResponse)(nil), "cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccountResponse")
-	proto.RegisterType((*MsgDonateAllVestingTokens)(nil), "cosmos.vesting.v1beta1.MsgDonateAllVestingTokens")
-	proto.RegisterType((*MsgDonateAllVestingTokensResponse)(nil), "cosmos.vesting.v1beta1.MsgDonateAllVestingTokensResponse")
 }
 
 func init() { proto.RegisterFile("cosmos/vesting/v1beta1/tx.proto", fileDescriptor_5338ca97811f9792) }
@@ -614,9 +528,6 @@ type MsgClient interface {
 	//
 	// Since: cosmos-sdk 0.46
 	CreatePeriodicVestingAccount(ctx context.Context, in *MsgCreatePeriodicVestingAccount, opts ...grpc.CallOption) (*MsgCreatePeriodicVestingAccountResponse, error)
-	// DonateAllVestingTokens defines a method that enables donating all vesting
-	// tokens to community pool
-	DonateAllVestingTokens(ctx context.Context, in *MsgDonateAllVestingTokens, opts ...grpc.CallOption) (*MsgDonateAllVestingTokensResponse, error)
 }
 
 type msgClient struct {
@@ -654,15 +565,6 @@ func (c *msgClient) CreatePeriodicVestingAccount(ctx context.Context, in *MsgCre
 	return out, nil
 }
 
-func (c *msgClient) DonateAllVestingTokens(ctx context.Context, in *MsgDonateAllVestingTokens, opts ...grpc.CallOption) (*MsgDonateAllVestingTokensResponse, error) {
-	out := new(MsgDonateAllVestingTokensResponse)
-	err := c.cc.Invoke(ctx, "/cosmos.vesting.v1beta1.Msg/DonateAllVestingTokens", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
 	// CreateVestingAccount defines a method that enables creating a vesting
@@ -678,9 +580,6 @@ type MsgServer interface {
 	//
 	// Since: cosmos-sdk 0.46
 	CreatePeriodicVestingAccount(context.Context, *MsgCreatePeriodicVestingAccount) (*MsgCreatePeriodicVestingAccountResponse, error)
-	// DonateAllVestingTokens defines a method that enables donating all vesting
-	// tokens to community pool
-	DonateAllVestingTokens(context.Context, *MsgDonateAllVestingTokens) (*MsgDonateAllVestingTokensResponse, error)
 }
 
 // UnimplementedMsgServer can be embedded to have forward compatible implementations.
@@ -695,9 +594,6 @@ func (*UnimplementedMsgServer) CreatePermanentLockedAccount(ctx context.Context,
 }
 func (*UnimplementedMsgServer) CreatePeriodicVestingAccount(ctx context.Context, req *MsgCreatePeriodicVestingAccount) (*MsgCreatePeriodicVestingAccountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreatePeriodicVestingAccount not implemented")
-}
-func (*UnimplementedMsgServer) DonateAllVestingTokens(ctx context.Context, req *MsgDonateAllVestingTokens) (*MsgDonateAllVestingTokensResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DonateAllVestingTokens not implemented")
 }
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
@@ -758,24 +654,6 @@ func _Msg_CreatePeriodicVestingAccount_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Msg_DonateAllVestingTokens_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgDonateAllVestingTokens)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MsgServer).DonateAllVestingTokens(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/cosmos.vesting.v1beta1.Msg/DonateAllVestingTokens",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).DonateAllVestingTokens(ctx, req.(*MsgDonateAllVestingTokens))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 var _Msg_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "cosmos.vesting.v1beta1.Msg",
 	HandlerType: (*MsgServer)(nil),
@@ -791,10 +669,6 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreatePeriodicVestingAccount",
 			Handler:    _Msg_CreatePeriodicVestingAccount_Handler,
-		},
-		{
-			MethodName: "DonateAllVestingTokens",
-			Handler:    _Msg_DonateAllVestingTokens_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -1043,59 +917,6 @@ func (m *MsgCreatePeriodicVestingAccountResponse) MarshalToSizedBuffer(dAtA []by
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgDonateAllVestingTokens) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *MsgDonateAllVestingTokens) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MsgDonateAllVestingTokens) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.FromAddress) > 0 {
-		i -= len(m.FromAddress)
-		copy(dAtA[i:], m.FromAddress)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.FromAddress)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *MsgDonateAllVestingTokensResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *MsgDonateAllVestingTokensResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MsgDonateAllVestingTokensResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	return len(dAtA) - i, nil
-}
-
 func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	offset -= sovTx(v)
 	base := offset
@@ -1204,28 +1025,6 @@ func (m *MsgCreatePeriodicVestingAccount) Size() (n int) {
 }
 
 func (m *MsgCreatePeriodicVestingAccountResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	return n
-}
-
-func (m *MsgDonateAllVestingTokens) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.FromAddress)
-	if l > 0 {
-		n += 1 + l + sovTx(uint64(l))
-	}
-	return n
-}
-
-func (m *MsgDonateAllVestingTokensResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1869,138 +1668,6 @@ func (m *MsgCreatePeriodicVestingAccountResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: MsgCreatePeriodicVestingAccountResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *MsgDonateAllVestingTokens) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MsgDonateAllVestingTokens: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgDonateAllVestingTokens: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FromAddress", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.FromAddress = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *MsgDonateAllVestingTokensResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MsgDonateAllVestingTokensResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgDonateAllVestingTokensResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:

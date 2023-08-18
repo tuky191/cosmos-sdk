@@ -384,7 +384,7 @@ func TestMigrateVestingAccounts(t *testing.T) {
 			3666666670000,
 			3666666670000,
 			0,
-			1601042400,
+			1601042400 + 1,
 		},
 		{
 			"periodic vesting account, all has vested",
@@ -430,7 +430,7 @@ func TestMigrateVestingAccounts(t *testing.T) {
 			3666666670000,
 			0,
 			3666666670000,
-			1601042400 + 31536000 + 15897600 + 15897600,
+			1601042400 + 31536000 + 15897600 + 15897600 + 1,
 		},
 		{
 			"periodic vesting account, first period has vested",
@@ -476,7 +476,7 @@ func TestMigrateVestingAccounts(t *testing.T) {
 			3666666670000,
 			3666666670000 - 1833333335000,
 			1833333335000,
-			1601042400 + 31536000,
+			1601042400 + 31536000 + 1,
 		},
 		{
 			"periodic vesting account, first 2 period has vested",
@@ -522,7 +522,7 @@ func TestMigrateVestingAccounts(t *testing.T) {
 			3666666670000,
 			3666666670000 - 1833333335000 - 916666667500,
 			1833333335000 + 916666667500,
-			1601042400 + 31536000 + 15638400,
+			1601042400 + 31536000 + 15638400 + 1,
 		},
 		{
 			"vesting account has unbonding delegations in place",

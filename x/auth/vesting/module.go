@@ -19,7 +19,6 @@ import (
 	"cosmossdk.io/core/appmodule"
 
 	"github.com/cosmos/cosmos-sdk/x/auth/keeper"
-
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 )
@@ -81,22 +80,13 @@ type AppModule struct {
 
 	accountKeeper keeper.AccountKeeper
 	bankKeeper    types.BankKeeper
-	distrKeeper   types.DistrKeeper
-	stakingKeeper types.StakingKeeper
 }
 
-func NewAppModule(
-	ak keeper.AccountKeeper,
-	bk types.BankKeeper,
-	dk types.DistrKeeper,
-	sk types.StakingKeeper,
-) AppModule {
+func NewAppModule(ak keeper.AccountKeeper, bk types.BankKeeper) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{},
 		accountKeeper:  ak,
 		bankKeeper:     bk,
-		distrKeeper:    dk,
-		stakingKeeper:  sk,
 	}
 }
 
@@ -113,15 +103,7 @@ func (AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterMsgServer(
-		cfg.MsgServer(),
-		NewMsgServerImpl(
-			am.accountKeeper,
-			am.bankKeeper,
-			am.distrKeeper,
-			am.stakingKeeper,
-		),
-	)
+	types.RegisterMsgServer(cfg.MsgServer(), NewMsgServerImpl(am.accountKeeper, am.bankKeeper))
 }
 
 // InitGenesis performs a no-op.
@@ -152,8 +134,6 @@ type VestingInputs struct {
 
 	AccountKeeper keeper.AccountKeeper
 	BankKeeper    types.BankKeeper
-	// DistrKeeper   types.DistrKeeper
-	StakingKeeper types.StakingKeeper
 }
 
 type VestingOutputs struct {
@@ -163,7 +143,7 @@ type VestingOutputs struct {
 }
 
 func ProvideModule(in VestingInputs) VestingOutputs {
-	m := NewAppModule(in.AccountKeeper, in.BankKeeper, nil, in.StakingKeeper)
+	m := NewAppModule(in.AccountKeeper, in.BankKeeper)
 
 	return VestingOutputs{Module: m}
 }
