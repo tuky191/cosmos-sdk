@@ -6,6 +6,7 @@ import (
 	_ "github.com/cosmos/cosmos-sdk/x/auth/vesting"
 	_ "github.com/cosmos/cosmos-sdk/x/bank"
 	_ "github.com/cosmos/cosmos-sdk/x/consensus"
+	_ "github.com/cosmos/cosmos-sdk/x/distribution"
 	_ "github.com/cosmos/cosmos-sdk/x/feegrant/module"
 	_ "github.com/cosmos/cosmos-sdk/x/genutil"
 	_ "github.com/cosmos/cosmos-sdk/x/params"
@@ -16,6 +17,7 @@ import (
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
@@ -27,6 +29,7 @@ import (
 	authmodulev1 "cosmossdk.io/api/cosmos/auth/module/v1"
 	bankmodulev1 "cosmossdk.io/api/cosmos/bank/module/v1"
 	consensusmodulev1 "cosmossdk.io/api/cosmos/consensus/module/v1"
+	distributionv1 "cosmossdk.io/api/cosmos/distribution/module/v1"
 	feegrantmodulev1 "cosmossdk.io/api/cosmos/feegrant/module/v1"
 	genutilmodulev1 "cosmossdk.io/api/cosmos/genutil/module/v1"
 	paramsmodulev1 "cosmossdk.io/api/cosmos/params/module/v1"
@@ -45,6 +48,7 @@ var AppConfig = appconfig.Compose(&appv1alpha1.Config{
 					stakingtypes.ModuleName,
 					authtypes.ModuleName,
 					banktypes.ModuleName,
+					distributiontypes.ModuleName,
 					genutiltypes.ModuleName,
 					feegrant.ModuleName,
 					paramstypes.ModuleName,
@@ -55,6 +59,7 @@ var AppConfig = appconfig.Compose(&appv1alpha1.Config{
 					stakingtypes.ModuleName,
 					authtypes.ModuleName,
 					banktypes.ModuleName,
+					distributiontypes.ModuleName,
 					genutiltypes.ModuleName,
 					feegrant.ModuleName,
 					paramstypes.ModuleName,
@@ -64,6 +69,7 @@ var AppConfig = appconfig.Compose(&appv1alpha1.Config{
 				InitGenesis: []string{
 					authtypes.ModuleName,
 					banktypes.ModuleName,
+					distributiontypes.ModuleName,
 					stakingtypes.ModuleName,
 					genutiltypes.ModuleName,
 					feegrant.ModuleName,
@@ -84,6 +90,7 @@ var AppConfig = appconfig.Compose(&appv1alpha1.Config{
 					{Account: stakingtypes.NotBondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
 					{Account: "multiple permissions account", Permissions: []string{authtypes.Minter, authtypes.Burner, stakingtypes.ModuleName}}, // dummy permissions
 					{Account: "random permission", Permissions: []string{"random"}},
+					{Account: distributiontypes.ModuleName, Permissions: []string{authtypes.Minter, authtypes.Burner}},
 				},
 			}),
 		},
@@ -115,10 +122,13 @@ var AppConfig = appconfig.Compose(&appv1alpha1.Config{
 			Name:   genutiltypes.ModuleName,
 			Config: appconfig.WrapAny(&genutilmodulev1.Module{}),
 		},
-
 		{
 			Name:   feegrant.ModuleName,
 			Config: appconfig.WrapAny(&feegrantmodulev1.Module{}),
+		},
+		{
+			Name:   distributiontypes.ModuleName,
+			Config: appconfig.WrapAny(&distributionv1.Module{}),
 		},
 	},
 })
